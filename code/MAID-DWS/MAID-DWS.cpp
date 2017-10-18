@@ -1,19 +1,19 @@
-/*
- * Device Title: MK-DoorSensor
- * Device Description: MQTT Door Sensor
- * Device Explanation: When the magnetic switch sensor is broken then
- *                     the device sends an mqtt message to the defined server.
- * Device information: https://www.MK-SmartHouse.com/door-sensor
+/**
+ *        _____  ____    ____  _______          _
+ *       |_   _||_   \  /   _||_   __ \        / \
+ *         | |    |   \/   |    | |__) |      / _ \
+ *     _   | |    | |\  /| |    |  __ /      / ___ \
+ *    | |__' |   _| |_\/_| |_  _| |  \ \_  _/ /   \ \_
+ *    `.____.'  |_____||_____||____| |___||____| |____|
  *
- * Author: Matt Kaczynski
- * Website: http://www.MK-SmartHouse.com
+ * Project by Jorge Assunção
  *
- * Code may only be distrbuted through http://www.MK-SmartHouse.com any other methods
- * of obtaining or distributing are prohibited
- * Copyright (c) 2016-2017
+ * See Github for instructions on how to use this code: https://github.com/jorgeassuncao/MAID-DWS
  *
- * Note: After flashing the code once you can remotely access your device by going to http://HOSTNAMEOFDEVICE.local/firmware
- * obviously replace HOSTNAMEOFDEVICE with whatever you defined below. The user name and password are also defined below.
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License version 2 as published by the Free Software Foundation.
+ *
+ * You can change your personal user data (wifi access, MQTT server, etc) in the "config/userdata.h" file
  */
 
  //************* INCLUDE LIBRARIES ************************************************************************
@@ -24,9 +24,23 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <Breathe.h>
+#include "RemoteDebug.h"
 #include "../config/userdata_devel.h"
 //#include "../config/pin_mapping.h"
 
+//************* PROJECT AND VERSION **********************************************************************
+//********************************************************************************************************
+const char* proj_ver = "MAID - Doors and Windows Sensor v0.1.2 (18/10/2017)";   // Project name and version
+
+//************* CONFIG DEBUG *****************************************************************************
+//********************************************************************************************************
+RemoteDebug Debug;                                                              // Remote debug type
+
+//************* CONFIG BREATHE ***************************************************************************
+//********************************************************************************************************
+Breathe Breathe;                                                                // Initiate LED breathe
+
+//************* CONFIG OTA *******************************************************************************
 //********************************************************************************************************
 const char* update_path = "/firmware";                                          // Path to firmware update page
 
@@ -40,8 +54,6 @@ int ledPin = D4;                                                                
 
 //int ledState = LOW;             // ledState used to set the LED
 
-Breathe Breathe;    // Init breathe
-
 //********************************************************************************************************
 
 //unsigned long previousMillis = 0;        // will store last time LED was updated
@@ -52,6 +64,9 @@ long unsigned int lowIn;    //the time when the sensor outputs a low impulse
 //the amount of milliseconds the sensor has to be low
 //before we assume all detection has stopped
 long unsigned int pause = 100;
+
+byte mac[6];                                                                    // Variable - MAC address
+char myBuffer[15];                                                              // Variable - MAC string buffer
 
 //sensor variables
 boolean lockLow = true;
@@ -81,10 +96,37 @@ void setup()
   pinMode(g_ledPin, OUTPUT);
   pinMode(b_ledPin, OUTPUT);
 
-  WiFi.config(ip, dns, gateway, subnet);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  Serial.begin(115200);
+  Serial.println("- - - - - - - - - - - - - - - - - - - - - - - - - - -");      // Block separator to serial interface
+  Debug.println("- - - - - - - - - - - - - - - - - - - - - - - - - - -");       // Block separator to telnet debug interface
+  Serial.println(proj_ver);                                                     // Send project name and version to serial interface
+  Debug.println(proj_ver);                                                      // Send project name and version to telnet debug interface
+  Serial.println("- - - - - - - - - - - - - - - - - - - - - - - - - - -");      // Block separator to serial interface
+  Debug.println("- - - - - - - - - - - - - - - - - - - - - - - - - - -");       // Block separator to telnet debug interface
+  Serial.println();                                                             // Send space to serial interface
+  Debug.println();                                                              // Send space to telnet debug interface
+
+  Serial.println();                                                             // Connecting to wifi network
+  Serial.print("Connecting to "); Serial.println(ssid);                         // Send network name to serial interface
+  Debug.printf("Connecting to "); Debug.println(ssid);                          // Send network name to telnet debug interface
+
+  WiFi.config(ip, dns, gateway, subnet);                                        // Configure connection with IP, DNS, Gateway and subnet
+  WiFi.mode(WIFI_STA);                                                          // Switch to STA mode
+  WiFi.begin(ssid, password);                                                   // Start wifi connection with SSID and Password
   client.begin(mqtt_server, net);
+  WiFi.macAddress(mac);                                                         // Get MAC address of the node
+
+  Serial.println();                                                             // Block space to serial interface
+  Debug.println();                                                              // Block space to telnet debug interface
+  Serial.println("WiFi connected");                                             // Send successful connection to serial interface
+  Debug.println("WiFi connected");                                              // Send successful connection to telnet debug interface
+
+  Serial.print("IP address is "); Serial.println(WiFi.localIP());               // Send IP address to serial interface
+  Debug.printf("IP address is "); Debug.println(WiFi.localIP());                // Send IP address to telnet debug interface
+
+  sprintf(myBuffer,"%02X:%02X:%02X:%02X:%02X:%02X",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);    // Get MAC address
+  Serial.print("MAC address is "); Serial.println(myBuffer);                                      // Send MAC address to serial interface
+  Debug.printf("MAC address is "); Debug.println(myBuffer);                                       // Send MAC address to telnet debug interface
 
   connect();
 
@@ -94,9 +136,6 @@ void setup()
   httpServer.begin();
 
   MDNS.addService("http", "tcp", 80);
-
-  //digitalWrite(r_ledPin, HIGH);   // TESTE
-  //digitalWrite(r_ledPin, LOW);
 
 }
 
@@ -113,8 +152,6 @@ void connect() {
   }
 }
 
-
-
 //************* LOOP *************************************************************************************
 //********************************************************************************************************
 void loop()
@@ -124,18 +161,20 @@ void loop()
 
   Breathe.set(b_ledPin, HIGH, 1, 5 );    // https://github.com/kslstn/Breathe
 
-  if (!client.connected()) {                                                  // If client disconnects...
-    connect();                                                            // ...connect again
+  if (!client.connected()) {                                                    // If client disconnects...
+    connect();                                                                  // ...connect again
   }
 
   client.loop();
 
-    //
-  if (digitalRead(sensorPin) == HIGH) {                                            //Sensor Detection
+  if (digitalRead(sensorPin) == HIGH) {                                         // Sensor Detection
     if (lockLow)
     {
       lockLow = false;    //makes sure we wait for a transition to LOW before any further output is made:
-      client.publish(outTopic, "OPEN");
+      client.publish(outTopic, doorOpen);
+      Serial.print("Door state: << Opened >> ");                                // Send door state to serial interface
+      digitalWrite(r_ledPin, HIGH);                                             // Red LED ON
+      digitalWrite(g_ledPin, LOW);                                              // Green LED OFF
       delay(50);
     }
     takeLowTime = true;
@@ -155,7 +194,10 @@ void loop()
       //makes sure this block of code is only executed again after
       //a new detection sequence has been detected
       lockLow = true;
-      client.publish(outTopic, "CLOSED");
+      client.publish(outTopic, doorClosed);
+      Serial.print("Door state: >> Closed << ");                                // Send door state to serial interface
+      digitalWrite(g_ledPin, HIGH);                                             // Red LED OFF
+      digitalWrite(r_ledPin, LOW);                                              // Green LED ON
       delay(50);
     }
   }
