@@ -1,0 +1,13 @@
+
+
+PubSubClient:
+> pio lib install "PubSubClient"
+
+RemoteDebug:
+platformio lib install 1266
+
+MQTT:
+pio lib install "MQTT"
+
+looper:
+pio lib install "looper"
