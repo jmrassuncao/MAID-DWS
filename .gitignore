@@ -36,6 +36,8 @@
 .gcc-flags.json
 
 # Local files
+/lib
+lib/
 .gitignore
 *.yml
 platformio.ini
