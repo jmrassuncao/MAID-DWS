@@ -4,7 +4,7 @@ PubSubClient:
 > pio lib install "PubSubClient"
 
 RemoteDebug:
-platformio lib install 1266
+pio lib install "RemoteDebug"
 
 MQTT:
 pio lib install "MQTT"
