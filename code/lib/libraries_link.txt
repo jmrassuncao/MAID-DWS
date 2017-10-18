@@ -10,4 +10,4 @@ MQTT:
 pio lib install "MQTT"
 
 looper:
-pio lib install "looper"
+https://github.com/kslstn/Breathe
