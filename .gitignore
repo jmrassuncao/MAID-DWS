@@ -37,7 +37,6 @@
 
 # Local files
 /lib
-lib/
 .gitignore
 *.yml
 platformio.ini
