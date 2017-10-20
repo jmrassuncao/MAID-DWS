@@ -19,8 +19,11 @@
  //************* INCLUDE LIBRARIES ************************************************************************
  //********************************************************************************************************
 #include <ESP8266WiFi.h>
+#include <WiFiClient.h>
 #include <MQTTClient.h>
 #include <TimeLib.h>
+#include <Timezone.h>
+#include <WiFiUdp.h>
 #include <NtpClientLib.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -32,7 +35,7 @@
 
 //************* PROJECT AND VERSION **********************************************************************
 //********************************************************************************************************
-const char* proj_ver = "MAID - Doors and Windows Sensor v0.1.4 (18/10/2017)";   // Project name and version
+const char* proj_ver = "MAID - Doors and Windows Sensor v0.1.4 (20/10/2017)";   // Project name and version
 
 //************* CONFIG DEBUG *****************************************************************************
 //********************************************************************************************************
@@ -49,10 +52,6 @@ ESP8266WebServer server(80);                                                    
 //************* CONFIG OTA *******************************************************************************
 //********************************************************************************************************
 const char* update_path = "/firmware";                                          // Path to OTA update page
-
-//************* CONFIG UDP *******************************************************************************
-//********************************************************************************************************
-
 
 //************* CONFIG OTHER GLOBALS *********************************************************************
 //********************************************************************************************************
@@ -251,13 +250,11 @@ void setup()
 }
 
 void connect() {
-  while (WiFi.status() != WL_CONNECTED)                                         //Connect to wifi network
-  {
+  while (WiFi.status() != WL_CONNECTED) {                                       //Connect to wifi network
     delay(1000);                                                                // Delay
   }
 
-  while (!client.connect(host_name, mqtt_username, mqtt_password))              //Connect to MQTT server
-  {
+  while (!client.connect(host_name, mqtt_username, mqtt_password)) {            //Connect to MQTT server
     delay(1000);                                                                // Delay
   }
 }
@@ -269,7 +266,6 @@ void loop()
   httpServer.handleClient();                                                    // Handle http requests
 
   Breathe.set(b_ledPin, HIGH, 1, 5 );                                           // Breathe the external blue LED
-  Breathe.set(ledPin, HIGH, 0.5, 10 );                                          // Breathe the internal blue LED
 
   if (!client.connected()) {                                                    // If client disconnects...
     connect();                                                                  // ...connect again
@@ -284,9 +280,9 @@ void loop()
       client.publish(outTopic, doorOpen);                                       // Publish door state to MQTT topic
       Serial.println("Door state: << Opened >> ");                              // Send door state to serial interface
       Debug.println("Door state: << Opened >> ");                               // Send door state to debug interface
-      doorState = "Open";                                                     // Saves door state in variable
-      digitalWrite(r_ledPin, HIGH);                                             // Red LED ON
-      digitalWrite(g_ledPin, LOW);                                              // Green LED OFF
+      doorState = "Open";                                                       // Saves door state to variable
+      digitalWrite(r_ledPin, LOW);                                              // Red LED ON
+      digitalWrite(g_ledPin, HIGH);                                             // Green LED OFF
       delay(50);                                                                // Delay
     }
     takeLowTime = true;
@@ -303,9 +299,9 @@ void loop()
       client.publish(outTopic, doorClosed);                                     // Publish door state to MQTT topic
       Serial.println("Door state: >> Closed << ");                              // Send door state to serial interface
       Debug.println("Door state: >> Closed << ");                               // Send door state to debug interface
-      doorState = "Closed";                                                   // Saves door state in variable
-      digitalWrite(g_ledPin, HIGH);                                             // Red LED OFF
-      digitalWrite(r_ledPin, LOW);                                              // Green LED ON
+      doorState = "Closed";                                                     // Saves door state to variable
+      digitalWrite(g_ledPin, LOW);                                              // Red LED OFF
+      digitalWrite(r_ledPin, HIGH);                                             // Green LED ON
       delay(50);
     }
   }
