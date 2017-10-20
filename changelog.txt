@@ -1,3 +1,7 @@
+v0.1.5 (18/10/2017)
+-------------------
+(+) Added extra webpage to handle device reboot
+
 v0.1.4 (18/10/2017)
 -------------------
 (+) Added Remote Debug via Telnet
