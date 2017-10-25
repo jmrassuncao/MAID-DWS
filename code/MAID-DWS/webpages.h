@@ -33,7 +33,7 @@
   return page;
 }
 
-void handleRoot() {                                                             // Handle "root" page
+void handleRoot() {                                                             // Handle "root" page 
   server.send ( 200, "text/html", getPage() );
 }
 
