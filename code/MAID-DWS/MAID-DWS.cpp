@@ -18,7 +18,7 @@
 
 //************* INCLUDE LIBRARIES ************************************************************************
 //********************************************************************************************************
-#include "../config/userdata_devel.h"	                                          // Load external userdata file
+#include "../config/userdata_prod.h"	                                          // Load external userdata file
 #include <Arduino.h>
 #include <TimeLib.h>
 #include <NtpClientLib.h>
@@ -27,9 +27,9 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <RemoteDebug.h>
 #include <Breathe.h>
-//
 #include "../config/WifiConfig.h"                                               // Load wifi configuration file
 
 //************* PROJECT AND VERSION **********************************************************************
@@ -47,7 +47,7 @@ String doorStateTimeDate;
 long unsigned int lowIn;                                                        // Time when the sensor outputs a low impulse
 long unsigned int pause = 100;																									// Millis the sensor has to be low to assume detection has stopped
 
-boolean lockLow = true;                                                         //sensor variables
+boolean lockLow = false;                                                         //sensor variables
 boolean takeLowTime;
 
 //************* CREATE DEBUG *****************************************************************************
@@ -69,6 +69,10 @@ ESP8266WebServer server(80);                                                    
 
 #include "webpages.h"																														// include webpages file
 
+//************* CONFIG OTA *******************************************************************************
+//********************************************************************************************************
+ESP8266HTTPUpdateServer httpUpdater;
+
 //************* CONNECT TO WIFI AND NTP ******************************************************************
 //********************************************************************************************************
 void onSTAGotIP(WiFiEventStationModeGotIP ipInfo) {															// Start NTP only after IP network is connected
@@ -82,7 +86,7 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event_info) {						// Ma
 	Serial.printf("Disconnected from %s\n", event_info.ssid.c_str());
 	Serial.printf("Reason: %d\n", event_info.reason);
 	digitalWrite(ONBOARD_LED, HIGH); 																							// Turn off internal LED
-	//NTP.stop(); // NTP sync disabled to avoid sync errors in no wifi
+	//NTP.stop(); // NTP sync disabled to avoid sync errors if no wifi
 }
 
 void processSyncEvent(NTPSyncEvent_t ntpEvent) {																// Manage NTP disconnection
@@ -227,11 +231,35 @@ void setup() {
 	Serial.println(" Started!");                                                  // Send text to serial interface
 	Debug.println(" Started!");                                                   // Send text to telnet debug interface
 
+	Serial.print("Starting OTA Updater... ");                                     // Block space to serial interface
+  Debug.print("Starting OTA Updater... ");                                      // Block space to telnet debug interface
+	httpUpdater.setup(&server, UPDATE_PATH, ACCESS_USERNAME, ACCESS_PASSWORD);		// Start HTTP Updater
+	delay(1000);																																	// Wait 1 second
+	digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);	// Blink internal LED
+	Serial.println(" Started!");                                                  // Send text to serial interface
+	Debug.println(" Started!");                                                   // Send text to telnet debug interface
+	Serial.println();                                                             // Block space to serial interface
+  Debug.println();                                                              // Block space to telnet debug interface
+	Serial.print("Open http://"); Serial.print(WiFi.localIP());										// Send text to serial interface
+	Debug.print("Open http://"); Debug.print(WiFi.localIP());											// Send text to telnet debug interface
+	Serial.println(" for web interface");																					// Send text to serial interface
+	Debug.println(" for web interface");																					// Send text to telnet debug interface
+	Serial.print("Open http://"); Serial.print(WiFi.localIP());										// Send text to serial interface
+	Debug.print("Open http://"); Debug.print(WiFi.localIP());											// Send text to telnet debug interface
+	Serial.print(UPDATE_PATH); Serial.print(" for OTA. Login with username '");		// Send text to serial interface
+	Debug.print(UPDATE_PATH); Debug.print(" for OTA. Login with username '");			// Send text to telnet debug interface
+	Serial.print(ACCESS_USERNAME); Serial.print("' and password '");							// Send text to serial interface
+	Debug.print(ACCESS_USERNAME); Debug.print("' and password '");								// Send text to telnet debug interface
+	Serial.print(ACCESS_PASSWORD); Serial.print("'");															// Send text to serial interface
+	Debug.print(ACCESS_PASSWORD); Debug.print("'");																// Send text to telnet debug interface
+	Serial.println();                                                             // Block space to serial interface
+  Debug.println();                                                              // Block space to telnet debug interface
+
 	client.setServer(MQTT_SERVER, MQTT_PORT);                                     // Start MQTT client
 
-	delay(2000);
+	delay(2000);																																	// Wait 2 seconds
 	Serial.print("Daylight Saving period is ");                                   // Send text to serial interface
-	Serial.println(NTP.isSummerTime() ? "Summer Time" : "Winter Time");
+	Serial.println(NTP.isSummerTime() ? "Summer Time" : "Winter Time");						// Send text to serial interface
 
 }
 
