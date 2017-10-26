@@ -33,7 +33,7 @@
   page +=           "<h2>";
   page +=             PROJ_VER;
   page +=           "</h2>";
-  page +=           "<p>This project uses a sensor, mechanical or magnetic, to get the state of your doors or windows. The state is published to the topic <small><em style='color: #ababab;'>";
+  page +=           "<p>This project uses a sensor (mechanical, inductive or magnetic) to get the state of your doors or windows. The state is published to the topic <small><em style='color: #ababab;'>";
   page +=             MQTT_DOOR_STATE_TOPIC;
   page +=           "</em></small></p>";
   page +=         "</div>";
