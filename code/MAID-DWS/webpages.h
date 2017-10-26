@@ -57,8 +57,11 @@
   page +=           " </p>";
   page +=         "</div>";
   page +=       "<div class='col-md-4'>";
-  page +=         "<h3 class='text-primary'> </h3>";
+  page +=         "<h3 class='text-primary'>Uptime</h3>";
   page +=           "<p class='lead'>";
+  page +=             NTP.getUptimeString();
+  page +=           " since ";
+  page +=             NTP.getTimeDateString(NTP.getFirstSync()).c_str();
   page +=           " </p>";
   page +=         "</div>";
   page +=       "</div>";
