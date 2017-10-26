@@ -7,7 +7,7 @@
  * For more information visit https://github.com/jorgeassuncao/MAID-DWS
  */
 
- String getPage(){
+ String getPage(){                                                               // Create webpage content
   String page = "<!DOCTYPE html>";
   page += "<html lang='en'>";
   page +=   "<head>";
@@ -25,15 +25,69 @@
   page +=     "<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js'></script>";
   page +=   "</head>";
   page +=   "<body>";
-  page +=     "<div>";
-  page +=       "HELLO!";
+  page +=   "<p></p>";
+  page +=     "<div class='container-fluid'>";
+  page +=     "<div class='row'>";
+  page +=       "<div class='col-md-12'>";
+  page +=         "<div class='jumbotron'>";
+  page +=           "<h2>";
+  page +=             PROJ_VER;
+  page +=           "</h2>";
+  page +=           "<p>This project uses a sensor, mechanical or magnetic, to get the state of your doors or windows. The state is published to the topic <small><em style='color: #ababab;'>";
+  page +=             MQTT_DOOR_STATE_TOPIC;
+  page +=           "</em></small></p>";
+  page +=         "</div>";
+  page +=         "<div class='alert alert-dismissable alert-info'>";
+  page +=           "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>×</button>";
+  page +=           "<strong>Attention!</strong> This page auto-refreshes every 15 seconds. Therefore, the state may not be correct";
+  page +=         "</div>";
+  page +=       "</div>";
   page +=     "</div>";
+  page +=     "<div class='row'>";
+  page +=       "<div class='col-md-4'>";
+  page +=         "<h3 class='text-primary'>Door State</h3>";
+  page +=           "<p class='lead'>";
+  page +=             doorState;
+  page +=           "</p>";
+  page +=         "</div>";
+  page +=       "<div class='col-md-4'>";
+  page +=         "<h3 class='text-primary'>Time/Date of State</h3>";
+  page +=           "<p class='lead'>";
+  page +=             doorStateTimeDate;
+  page +=           " </p>";
+  page +=         "</div>";
+  page +=       "<div class='col-md-4'>";
+  page +=         "<h3 class='text-primary'> </h3>";
+  page +=           "<p class='lead'>";
+  page +=           " </p>";
+  page +=         "</div>";
+  page +=       "</div>";
+  page +=       "<div class='row'>";
+  page +=         "<div class='col-md-12'>";
+  page +=           "<div class='alert alert-dismissable alert-danger'>";
+  page +=             "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>×</button>";
+  page +=           "<h4>Warning!</h4>The OTA update page is protected and you need to use the username and password that was configured when the code was flashed to the board.&nbsp;&nbsp;";
+  page +=           "<a href='/firmware'><button type='button' class='btn btn-warning btn-default'>OTA UPDATE</button></a>";
+  page +=         "</div>";
+  page +=       "<div class='row'>";
+  page +=         "<div class='col-md-12'>";
+  page +=           "<div class='alert alert-dismissable alert-danger'>";
+  page +=             "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>×</button>";
+  page +=           "<h4>Warning!</h4>Sometimes the board does not restart correctly. If you can't get back to this page after one minute, you need to reset on the board directly on the fisical reset button.&nbsp;&nbsp;";
+  page +=           "<a href='/reset'><button type='button' class='btn btn-warning btn-default' >RESET</button></a>";
+  page +=         "</div>";
+  page +=     "</div>";
+  page +=   "</div>";
+  page +=     "<div class='col-md-12'>";
+  page +=       "Jorge Assunção (2017) - <a href='https://github.com/jorgeassuncao/MAID-DWS' target='_blank' rel='noopener'>https://github.com/jorgeassuncao/MAID-DWS</a> <br/><br/>";
+  page +=     "</div>";
+  page += "</div>";
   page +=   "</body>";
   page += "</html>";
   return page;
 }
 
-void handleRoot() {                                                             // Handle "root" page 
+void handleRoot() {                                                             // Handle "root" page
   server.send ( 200, "text/html", getPage() );
 }
 
