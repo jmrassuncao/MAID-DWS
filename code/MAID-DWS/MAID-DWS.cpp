@@ -34,7 +34,21 @@
 
 //************* PROJECT AND VERSION **********************************************************************
 //********************************************************************************************************
-const char* proj_ver = "MAID - Doors and Windows Sensor v0.2.0 (25/10/2017)";   // Project name and version
+const char* PROJ_VER = "MAID - Doors and Windows Sensor v0.2.0 (26/10/2017)";   // Project name and version
+
+//************* GLOBAL VARIABLES *************************************************************************
+//********************************************************************************************************
+byte mac[6];                                                                    // Variable - MAC address
+char myBuffer[15];                                                              // Variable - MAC string buffer
+
+const char* doorState;                                                          // Variable - The state of the door
+String doorStateTimeDate;
+
+long unsigned int lowIn;                                                        // Time when the sensor outputs a low impulse
+long unsigned int pause = 100;																									// Millis the sensor has to be low to assume detection has stopped
+
+boolean lockLow = true;                                                         //sensor variables
+boolean takeLowTime;
 
 //************* CREATE DEBUG *****************************************************************************
 //********************************************************************************************************
@@ -67,7 +81,7 @@ void onSTAGotIP(WiFiEventStationModeGotIP ipInfo) {															// Start NTP o
 void onSTADisconnected(WiFiEventStationModeDisconnected event_info) {						// Manage network disconnection
 	Serial.printf("Disconnected from %s\n", event_info.ssid.c_str());
 	Serial.printf("Reason: %d\n", event_info.reason);
-	digitalWrite(ONBOARDLED, HIGH); 																							// Turn off internal LED
+	digitalWrite(ONBOARD_LED, HIGH); 																							// Turn off internal LED
 	//NTP.stop(); // NTP sync disabled to avoid sync errors in no wifi
 }
 
@@ -75,12 +89,12 @@ void processSyncEvent(NTPSyncEvent_t ntpEvent) {																// Manage NTP di
 	if (ntpEvent) {
 		Serial.print("Time Sync error: ");
 		if (ntpEvent == noResponse)
-			Serial.println("NTP server not reachable");
+			Serial.println("NTP server not reachable");																// Send text to serial interface
 		else if (ntpEvent == invalidAddress)
-			Serial.println("Invalid NTP server address");
+			Serial.println("Invalid NTP server address");															// Send text to serial interface
 	}
 	else {
-		Serial.print("Got NTP time: ");
+		Serial.print("NTP time is ");
 		Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
 	}
 }
@@ -95,15 +109,17 @@ void mqttConnect() {
   while (!client.connected()) {                                                 // Loop until reconnected
     Serial.print("Starting MQTT Client... ");                   								// Send text to serial interface
     Debug.printf("Starting MQTT Client... ");                   								// Send text to telnet debug interface
-    if (client.connect(DEVICE_HOSTNAME, MQTT_USERNAME, MQTT_PASSWORD)) {       	// Connect to MQTT broker
+    if (client.connect(
+			DEVICE_HOSTNAME, MQTT_USERNAME, MQTT_PASSWORD,
+			MQTT_WILL_TOPIC, MQTT_WILL_QOS, MQTT_WILL_RETAIN, MQTT_WILL_MESSAGE)) {		// Connect to MQTT broker
 			delay(1000);																															// Wait 1 second
-			digitalWrite(ONBOARDLED, LOW); delay(250); digitalWrite(ONBOARDLED, HIGH);// Blink internal LED
+			digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);	// Blink internal LED
 			delay(1000);																															// Wait 1 second
       Serial.println(" Started!");                                              // Send text to serial interface
       Debug.println(" Started!");                                               // Send text to telnet debug interface
 			Serial.println();                                                         // Block space to serial interface
 		  Debug.println();                                                          // Block space to telnet debug interface
-			digitalWrite(ONBOARDLED, LOW); 																						// Turn on internal LED
+			digitalWrite(ONBOARD_LED, LOW); 																					// Turn on internal LED
     } else {
       Serial.print("failed, rc=");                                              // Send text to serial interface
       Debug.printf("failed, rc=");                                              // Send text to telnet debug interface
@@ -116,11 +132,6 @@ void mqttConnect() {
   }
 }
 
-//************* GLOBAL VARIABLES *************************************************************************
-//********************************************************************************************************
-byte mac[6];                                                                    // Variable - MAC address
-char myBuffer[15];                                                              // Variable - MAC string buffer
-
 //************* SETUP ************************************************************************************
 //********************************************************************************************************
 void setup() {
@@ -131,8 +142,15 @@ void setup() {
   server.on("/reset", handleReset);                                             // Serve root page
   server.onNotFound(handleNotFound);                                            // Serve page not found
 
-	pinMode(ONBOARDLED, OUTPUT); 																									// Set internal LED as output
-	digitalWrite(ONBOARDLED, HIGH); 																							// Switch off LED
+	pinMode(ONBOARD_LED, OUTPUT); 																								// Set internal LED as output
+	digitalWrite(ONBOARD_LED, HIGH); 																							// Switch off LED
+
+	pinMode(SENSOR_PIN, INPUT_PULLUP);
+  digitalWrite(SENSOR_PIN, LOW);
+
+  pinMode(R_LED_PIN, OUTPUT);
+  pinMode(G_LED_PIN, OUTPUT);
+  pinMode(B_LED_PIN, OUTPUT);
 
 	NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {         												// When NTP syncs...
 		ntpEvent = event; 																													// ...mark as triggered
@@ -148,8 +166,8 @@ void setup() {
 
 	Serial.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - -");  // Block separator to serial interface
   Debug.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - -");   // Block separator to telnet debug interface
-  Serial.println(proj_ver);                                                     // Send project name and version to serial interface
-  Debug.println(proj_ver);                                                      // Send project name and version to telnet debug interface
+  Serial.println(PROJ_VER);                                                     // Send project name and version to serial interface
+  Debug.println(PROJ_VER);                                                      // Send project name and version to telnet debug interface
   Serial.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - -");  // Block separator to serial interface
   Debug.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - -");   // Block separator to telnet debug interface
   Serial.println();                                                             // Send space to serial interface
@@ -168,7 +186,7 @@ void setup() {
   Serial.println("WiFi connected!");                                            // Send successful connection to serial interface
   Debug.println("WiFi connected!");                                             // Send successful connection to telnet debug interface
 	delay(1000);
-	digitalWrite(ONBOARDLED, LOW); delay(250); digitalWrite(ONBOARDLED, HIGH);		// Blink internal LED
+	digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);// Blink internal LED
 	Serial.println();                                                             // Block space to serial interface
   Debug.println();                                                              // Block space to telnet debug interface
 
@@ -179,19 +197,19 @@ void setup() {
 	Serial.println();                                                             // Block space to serial interface
   Debug.println();                                                              // Block space to telnet debug interface
 
-	Serial.print("Starting HTTP server... ");                                     // Block space to serial interface
-  Debug.print("Starting HTTP server... ");                                      // Block space to telnet debug interface
+	Serial.print("Starting HTTP server... ");                                     // Send text to serial interface
+  Debug.print("Starting HTTP server... ");                                      // Send text to telnet debug interface
 	server.begin();                                                               // Start Web server
 	delay(1000);																																	// Wait 1 second
-	digitalWrite(ONBOARDLED, LOW); delay(250); digitalWrite(ONBOARDLED, HIGH);		// Blink internal LED
+	digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);	// Blink internal LED
   Serial.println(" Started!");                                                  // Send text to serial interface
   Debug.println(" Started!");                                                   // Send text to telnet debug interface
 
-	Serial.print("Starting Telnet server... ");                                   // Block space to serial interface
-  Debug.print("Starting telnet server... ");                                    // Block space to telnet debug interface
+	Serial.print("Starting Telnet server... ");                                   // Send text to serial interface
+  Debug.print("Starting telnet server... ");                                    // Send text to telnet debug interface
 	Debug.begin(DEVICE_HOSTNAME);                                                 // Start Telnet server
 	delay(1000);																																	// Wait 1 second
-	digitalWrite(ONBOARDLED, LOW); delay(250); digitalWrite(ONBOARDLED, HIGH);		// Blink internal LED
+	digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);	// Blink internal LED
 	Serial.println(" Started!");                                                  // Send text to serial interface
   Debug.println(" Started!");                                                   // Send text to telnet debug interface
 	Debug.setResetCmdEnabled(true);                                               // Enable/disable (true/false) the reset command (true/false)
@@ -200,16 +218,20 @@ void setup() {
   Debug.showDebugLevel(false);                                                  // Enable/disable (true/false) debug levels
   Debug.showColors(true);                                                       // Enable/disable (true/false) colors
 
-	Serial.print("Starting mDNS server... ");                                     // Block space to serial interface
-  Debug.print("Starting mDNS server... ");                                      // Block space to telnet debug interface
+	Serial.print("Starting mDNS server... ");                                     // Send text to serial interface
+  Debug.print("Starting mDNS server... ");                                      // Send text to telnet debug interface
 	MDNS.begin(DEVICE_HOSTNAME);                                                  // Start mDNS service
 	MDNS.addService("http", "tcp", 80);                                           // Open por 80 for HTTP and TCP
 	delay(1000);																																	// Wait 1 second
-	digitalWrite(ONBOARDLED, LOW); delay(250); digitalWrite(ONBOARDLED, HIGH);		// Blink internal LED
+	digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);	// Blink internal LED
 	Serial.println(" Started!");                                                  // Send text to serial interface
 	Debug.println(" Started!");                                                   // Send text to telnet debug interface
 
 	client.setServer(MQTT_SERVER, MQTT_PORT);                                     // Start MQTT client
+
+	delay(2000);
+	Serial.print("Daylight Saving period is ");                                   // Send text to serial interface
+	Serial.println(NTP.isSummerTime() ? "Summer Time" : "Winter Time");
 
 }
 
@@ -219,7 +241,7 @@ void loop() {
 
 	server.handleClient();                                                        // Handle http requests
 
-	Breathe.set(B_LEDPIN, HIGH, 1, 5 );                                           // Breathe the external blue LED
+	Breathe.set(B_LED_PIN, HIGH, 1, 5 );                                          // Breathe the external blue LED
 
 	if (syncEventTriggered) {																											// If NTP not sync'ed...
 		processSyncEvent(ntpEvent);                                                 // ...sync it again
@@ -230,14 +252,46 @@ void loop() {
     mqttConnect();                                                              // ...connect again
   }
 
-	client.loop();																																// Fixes some stability issues with wifi connections
+	client.loop();																																// Allow MQTT client to process messages and refresh the connection
+	delay(10);                                                                    // Delay - Fixes stability issues with some wifi connections
 
-	// Code goes here!
+	if (digitalRead(SENSOR_PIN) == HIGH) {                                        // Sensor Detection - High
+    if (lockLow) {
+      lockLow = false;                                                          // Wait for a transition to LOW before further output
+      client.publish(MQTT_DOOR_STATE_TOPIC, MQTT_DOOR_OPEN, true);              // Publish door state to MQTT topic
+      Serial.print("Door state: << Opened >> at ");                             // Send door state to serial interface
+      Serial.println(NTP.getTimeDateString());																	// Send state time to serial interface
+      Debug.println("Door state: << Opened >> ");                               // Send door state to debug interface
+      doorState = "Open";                                                       // Saves door state to variable
+			doorStateTimeDate = NTP.getTimeDateString();															// Saves state time to variable
+      digitalWrite(R_LED_PIN, HIGH);                                            // Red LED ON
+      digitalWrite(G_LED_PIN, LOW);                                             // Green LED OFF
+      delay(50);                                                                // Delay
+    }
+    takeLowTime = true;
+  }
 
-  client.publish("teste", "1234");
-  Serial.print(NTP.getTimeDateString()); Serial.print(" ");
+  if (digitalRead(SENSOR_PIN) == LOW) {                                         // Sensor Detection - Low
+    if (takeLowTime) {
+      lowIn = millis();                                                         // Save the time of transition from high to LOW
+      takeLowTime = false;                                                      // Make sure this is only done at the start of a LOW phase
+    }
 
-	/* code */
+    if (!lockLow && millis() - lowIn > pause) {                                 // If sensor is low for more than a given time no more detections will happen
+      lockLow = true;                                                           // execute only if new sequence is detected
+      client.publish(MQTT_DOOR_STATE_TOPIC, MQTT_DOOR_CLOSED, true);            // Publish door state to MQTT topic
+      Serial.print("Door state: >> Closed << at ");                             // Send door state to serial interface
+			Serial.println(NTP.getTimeDateString());																	// Send state time to serial interface
+      Debug.println("Door state: >> Closed << ");                               // Send door state to debug interface
+      doorState = "Closed";                                                     // Saves door state to variable
+			doorStateTimeDate = NTP.getTimeDateString();															// Saves state time to variable
+      digitalWrite(G_LED_PIN, HIGH);                                            // Red LED OFF
+      digitalWrite(R_LED_PIN, LOW);                                             // Green LED ON
+      delay(50);
+    }
+  }
+
+	//if // publish the uptime every hour
 
 	Debug.handle();                                                               // Remote debug over telnet
 
