@@ -120,7 +120,7 @@ char ssid[] = YOUR_WIFI_SSID;
 // If you want to use a static IP (v4) address, uncomment the line below. You can also change the IP.
 // If the first line is commented out, the WiFi shield will attempt to get an IP from the DHCP server.
 // If you are using a static IP with the ESP8266 then you must also uncomment the SUBNET and GATEWAY.
-#define STATIC_IP_ADDRESS  192,168,1,222
+#define STATIC_IP_ADDRESS  192,168,1,211
 #define SUBNET_MASK        255,255,255,0      // REQUIRED for ESP8266_WIFI, optional for others
 #define GATEWAY_IP_ADDRESS 192,168,1,1        // REQUIRED for ESP8266_WIFI, optional for others 0,0,0,0
 
