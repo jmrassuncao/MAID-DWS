@@ -18,7 +18,7 @@
 
 //************* INCLUDE LIBRARIES ************************************************************************
 //********************************************************************************************************
-#include "../config/userdata_prod.h"	                                          // Load external userdata file
+#include "../config/userdata.h"	                                          			// Load external userdata file
 #include <Arduino.h>
 #include <TimeLib.h>
 #include <NtpClientLib.h>
@@ -28,6 +28,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPUpdateServer.h>
+#include <ArduinoOTA.h>
 #include <RemoteDebug.h>
 #include <Breathe.h>
 #include "../config/WifiConfig.h"                                               // Load wifi configuration file
@@ -45,9 +46,9 @@ const char* doorState;                                                          
 String doorStateTimeDate;
 
 long unsigned int lowIn;                                                        // Time when the sensor outputs a low impulse
-long unsigned int pause = 100;																									// Millis the sensor has to be low to assume detection has stopped
+long unsigned int pause = 200;																									// Millis the sensor has to be low to assume detection has stopped
 
-boolean lockLow = false;                                                         //sensor variables
+boolean lockLow = false;                                                        // Sensor variables
 boolean takeLowTime;
 
 //************* CREATE DEBUG *****************************************************************************
@@ -67,7 +68,7 @@ PubSubClient client(espClient);                                                 
 //********************************************************************************************************
 ESP8266WebServer server(80);                                                    // Config webserver port
 
-#include "webpages.h"																														// include webpages file
+#include "webpages.h"																														// Include webpages file
 
 //************* CONFIG OTA *******************************************************************************
 //********************************************************************************************************
@@ -117,7 +118,8 @@ void mqttConnect() {
 			DEVICE_HOSTNAME, MQTT_USERNAME, MQTT_PASSWORD,
 			MQTT_WILL_TOPIC, MQTT_WILL_QOS, MQTT_WILL_RETAIN, MQTT_WILL_MESSAGE)) {		// Connect to MQTT broker
 			delay(1000);																															// Wait 1 second
-			digitalWrite(ONBOARD_LED, LOW); delay(250); digitalWrite(ONBOARD_LED, HIGH);	// Blink internal LED
+			digitalWrite(ONBOARD_LED, LOW); delay(250);																// Blink internal LED
+			digitalWrite(ONBOARD_LED, HIGH);																					// ...
 			delay(1000);																															// Wait 1 second
       Serial.println(" Started!");                                              // Send text to serial interface
       Debug.println(" Started!");                                               // Send text to telnet debug interface
@@ -149,12 +151,12 @@ void setup() {
 	pinMode(ONBOARD_LED, OUTPUT); 																								// Set internal LED as output
 	digitalWrite(ONBOARD_LED, HIGH); 																							// Switch off LED
 
-	pinMode(SENSOR_PIN, INPUT_PULLUP);
-  digitalWrite(SENSOR_PIN, LOW);
+	pinMode(SENSOR_PIN, INPUT_PULLUP);																						// Pullup the sensor pin
+  digitalWrite(SENSOR_PIN, LOW);																								// Set sensor pin to low
 
-  pinMode(R_LED_PIN, OUTPUT);
-  pinMode(G_LED_PIN, OUTPUT);
-  pinMode(B_LED_PIN, OUTPUT);
+  pinMode(R_LED_PIN, OUTPUT);																										// Set red LED pin as output
+  pinMode(G_LED_PIN, OUTPUT); 																									// Set green LED pin as output
+  pinMode(B_LED_PIN, OUTPUT);																										// Set blue LED pin as output
 
 	NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {         												// When NTP syncs...
 		ntpEvent = event; 																													// ...mark as triggered
@@ -255,6 +257,9 @@ void setup() {
 	Serial.println();                                                             // Block space to serial interface
   Debug.println();                                                              // Block space to telnet debug interface
 
+	ArduinoOTA.begin();																														// Start OTA over wifi
+	#include "ota.h"																															// Include OTA file
+
 	client.setServer(MQTT_SERVER, MQTT_PORT);                                     // Start MQTT client
 
 	delay(2000);																																	// Wait 2 seconds
@@ -270,6 +275,8 @@ void loop() {
 	server.handleClient();                                                        // Handle http requests
 
 	Breathe.set(B_LED_PIN, HIGH, 1, 5 );                                          // Breathe the external blue LED
+
+	ArduinoOTA.handle();																													// Handle OTA requests via wifi
 
 	if (syncEventTriggered) {																											// If NTP not sync'ed...
 		processSyncEvent(ntpEvent);                                                 // ...sync it again
