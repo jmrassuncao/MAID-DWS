@@ -18,7 +18,7 @@
 
 //************* INCLUDE LIBRARIES ************************************************************************
 //********************************************************************************************************
-#include "../config/userdata.h"	                                          			// Load external userdata file
+#include "../config/userdata_prod.h"	                                          			// Load external userdata file
 #include <Arduino.h>
 #include <TimeLib.h>
 #include <NtpClientLib.h>
@@ -35,7 +35,7 @@
 
 //************* PROJECT AND VERSION **********************************************************************
 //********************************************************************************************************
-const char* PROJ_VER = "MAID - Doors and Windows Sensor v0.2.0 (26/10/2017)";   // Project name and version
+const char* PROJ_VER = "MAID - Doors and Windows Sensor v0.2.1 (27/10/2017)";   // Project name and version
 
 //************* GLOBAL VARIABLES *************************************************************************
 //********************************************************************************************************
