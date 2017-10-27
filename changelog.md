@@ -1,6 +1,19 @@
-v0.2.0 (26/10/2017)
+v0.2.1 (27/10/2017)
 -------------------
-(+)
+(+) Added text on the webpage header for another kind of sensor (inductive)
+(~) Changed sensor logic state
+(+) Added OTA via wifi
+(+) Added OTA Updater on webpage
+(+) Added device uptime on the webpage
+(~) Corrected several typos
+(+) Added variables to the main webpage
+
+v0.2.0 (25/10/2017)
+-------------------
+(+) Added sensor logic
+(!) Complete rewrite of the base code
+(~) Corrected Project date
+(~) Corrected typo on the webpage
 
 v0.1.5 (18/10/2017)
 -------------------
