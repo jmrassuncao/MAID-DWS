@@ -5,6 +5,6 @@ The **MAID - Door and Window Sensor** is a sensor for door and windows to contro
 The **MAID** acronym stands for **M**qtt en**A**bled w**I**fi no**D**e.
 
 ### Version
-Current version is: _MAID - Door and Window Sensor v0.1.1 (17/10/2017)_
+Current version is: _MAID - Door and Window Sensor v0.2.1 (27/10/2017)_
 
 ### Features
